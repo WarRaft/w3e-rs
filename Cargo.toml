@@ -1,0 +1,18 @@
+[package]
+name = "w3e-rs"
+version = "0.1.0"
+edition = "2024"
+description = "Reader and writer for Warcraft III terrain files (war3map.w3e)"
+license = "CC0-1.0"
+
+[[bin]]
+name = "w3e-rs"
+path = "src/main.rs"
+
+[lib]
+name = "w3e_rs"
+path = "src/lib.rs"
+
+[dependencies]
+parser-rs = { path = "../parser-rs" }
+bni-rs = { path = "../bni-rs" }
