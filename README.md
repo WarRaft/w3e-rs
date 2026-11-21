@@ -18,7 +18,7 @@ Little-endian.
 |-------------|--------------------------------------------------------------|
 | char[4]     | `W3E!`                                                       |
 | int         | version: 11; 12 in Reforged                                  |
-| char        | base tileset, a letter (`L` Lordaeron Summer ...: `TILESETS`) |
+| char        | base tileset, a letter (`L` ...; the game names them in `UI\WorldEditData.txt` `[TileSets]`) |
 | int         | custom tilesets: 1 yes, 0 no                                 |
 | int         | number of ground textures `a`                                |
 | char[4] × a | ground textures (`TerrainArt\Terrain.slk`: `Ldrt` ...)       |
@@ -76,7 +76,6 @@ ends. The wc3-rs editor opens `.w3e` files this way.
 ```ini
 [w3e]
 version=11
-// Lordaeron Summer
 tileset=L
 custom_tilesets=0
 // Ground textures (TerrainArt\Terrain.slk); points using each:

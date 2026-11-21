@@ -31,33 +31,6 @@ pub const ZERO_HEIGHT: u16 = 0x2000;
 /// The distance between two points of the grid, in world units.
 pub const CELL: f32 = 128.0;
 
-/// The base tilesets, by the letter the file stores.
-pub const TILESETS: [(u8, &str); 18] = [
-    (b'A', "Ashenvale"),
-    (b'B', "Barrens"),
-    (b'K', "Black Citadel"),
-    (b'Y', "Cityscape"),
-    (b'X', "Dalaran"),
-    (b'J', "Dalaran Ruins"),
-    (b'D', "Dungeon"),
-    (b'C', "Felwood"),
-    (b'I', "Icecrown Glacier"),
-    (b'F', "Lordaeron Fall"),
-    (b'L', "Lordaeron Summer"),
-    (b'W', "Lordaeron Winter"),
-    (b'N', "Northrend"),
-    (b'O', "Outland"),
-    (b'Z', "Sunken Ruins"),
-    (b'G', "Underground"),
-    (b'V', "Village"),
-    (b'Q', "Village Fall"),
-];
-
-/// The name of the tileset with letter `letter`.
-pub fn tileset_name(letter: u8) -> Option<&'static str> {
-    TILESETS.iter().find(|(l, _)| *l == letter).map(|(_, n)| *n)
-}
-
 /// One point of the grid, its fields as stored. The flags and the fields
 /// packed together are read and written through the methods.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -194,7 +167,8 @@ fn set_bit16(field: &mut u16, bit: u16, on: bool) {
 pub struct Terrain {
     /// 11 up to 1.31; 12 from Reforged, with more ground textures.
     pub version: u32,
-    /// The base tileset's letter ([`TILESETS`]).
+    /// The base tileset's letter (`L`; the names are the game's,
+    /// `UI\WorldEditData.txt` `[TileSets]`).
     pub tileset: u8,
     /// Whether the map uses custom tilesets (stored as an integer, kept as
     /// is).

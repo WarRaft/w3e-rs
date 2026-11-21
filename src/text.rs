@@ -29,7 +29,7 @@ use bni_rs::Document;
 use bni_rs::ast::{Field, Item};
 use parser_rs::{ParseError, Span};
 
-use crate::{Rawcode, TILESETS, Terrain, tileset_name};
+use crate::{Rawcode, Terrain};
 
 /// The section's name.
 pub const HEADER: &str = "w3e";
@@ -45,10 +45,6 @@ pub fn to_text(t: &Terrain) -> String {
     out += &format!("[{HEADER}]\n");
     out += "// 11 up to 1.31; 12 from Reforged, with more ground textures.\n";
     out += &format!("version={}\n", t.version);
-    out += &format!(
-        "// {}\n",
-        tileset_name(t.tileset).unwrap_or("an unknown tileset")
-    );
     out += &format!("tileset={}\n", tileset_text(t.tileset));
     out += "// 1: the map uses custom tilesets.\n";
     out += &format!("custom_tilesets={}\n", t.custom_tilesets);
@@ -75,8 +71,9 @@ pub fn to_text(t: &Terrain) -> String {
     out
 }
 
+/// A letter, or a number for any other byte.
 fn tileset_text(letter: u8) -> String {
-    if letter.is_ascii_graphic() && !b",\"/".contains(&letter) {
+    if letter.is_ascii_alphabetic() {
         (letter as char).to_string()
     } else {
         letter.to_string()
@@ -283,17 +280,14 @@ pub fn from_bni(doc: &Document) -> Parsed {
     Parsed { header, errors }
 }
 
+/// A letter, or a number for any other byte, as [`tileset_text`] writes
+/// it. Which letters are tilesets is the game's to say.
 fn tileset(value: &str) -> Result<u8, String> {
-    let letters = || {
-        TILESETS
-            .iter()
-            .map(|(l, n)| format!("{} {n}", *l as char))
-            .collect::<Vec<_>>()
-            .join(", ")
-    };
     match value.as_bytes() {
-        [c] if tileset_name(*c).is_some() => Ok(*c),
-        _ => Err(format!("the tileset is one letter: {}", letters())),
+        [c] if c.is_ascii_alphabetic() => Ok(*c),
+        _ => value
+            .parse()
+            .map_err(|_| "the tileset is one letter (L, A ...), or a number from 0 to 255".to_string()),
     }
 }
 

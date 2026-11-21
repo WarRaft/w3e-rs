@@ -47,7 +47,7 @@ fn text_reads_back_to_the_same_bytes() {
     }
     let text = to_text(&small(11));
     for line in [
-        "version=11\n// Lordaeron Summer\ntileset=L\n",
+        "version=11\ntileset=L\n",
         "// Ldrt 3, Lgrs 3\nground=Ldrt,Lgrs\n",
         "// CLdi 1\ncliffs=CLdi\n",
         "width=3\nheight=2\n",
@@ -112,7 +112,7 @@ fn errors_in_the_text() {
     let e = errors("[w3e]\nversion=13\ntileset=LL\nground=Ldrt,Lg\nheight=-1\nwhat=1\nheight=2\n[more]\n");
     assert_eq!(e.len(), 7, "{e:?}");
     assert!(e[0].starts_with("2: the version is 11"), "{e:?}");
-    assert!(e[1].starts_with("3: the tileset is one letter: A Ashenvale"), "{e:?}");
+    assert!(e[1].starts_with("3: the tileset is one letter"), "{e:?}");
     assert!(e[2].starts_with("4: `Lg` isn't a rawcode"), "{e:?}");
     assert!(e[3].starts_with("5: a whole number"), "{e:?}");
     assert!(e[4].starts_with("6: no field `what`"), "{e:?}");

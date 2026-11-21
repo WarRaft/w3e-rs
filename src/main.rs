@@ -2,7 +2,7 @@
 
 use std::process::ExitCode;
 
-use w3e_rs::{parse, tileset_name};
+use w3e_rs::parse;
 
 fn usage() {
     eprintln!("usage: w3e-rs <war3map.w3e>          check: read and write back");
@@ -43,9 +43,8 @@ fn main() -> ExitCode {
         );
         return ExitCode::SUCCESS;
     }
-    let tileset = tileset_name(t.tileset).unwrap_or("unknown");
     println!("version\t{}", t.version);
-    println!("tileset\t{} ({tileset})", t.tileset as char);
+    println!("tileset\t{}", t.tileset as char);
     println!("custom tilesets\t{}", t.custom_tilesets);
     println!("points\t{}x{}", t.width, t.height);
     println!("offset\t{} {}", t.offset_x, t.offset_y);

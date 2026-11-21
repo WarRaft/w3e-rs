@@ -119,12 +119,6 @@ fn bad_files() {
     assert!(parse(&head).is_err());
 }
 
-#[test]
-fn tilesets() {
-    assert_eq!(tileset_name(b'L'), Some("Lordaeron Summer"));
-    assert_eq!(tileset_name(b'?'), None);
-}
-
 /// Every map folder under `$W3E_CORPUS` (a `war3map.w3e`) reads and
 /// writes back byte for byte: `W3E_CORPUS=dir cargo test --release corpus
 /// -- --ignored`.
@@ -142,12 +136,6 @@ fn corpus() {
             t.to_bytes().unwrap() == bytes,
             "{}: differs after writing",
             entry.path().display()
-        );
-        assert!(
-            tileset_name(t.tileset).is_some(),
-            "{}: tileset {}",
-            entry.path().display(),
-            t.tileset as char
         );
         files += 1;
         points += t.points.len();
