@@ -45,16 +45,33 @@ fn text_reads_back_to_the_same_bytes() {
         assert_eq!(back.to_bytes().unwrap(), t.to_bytes().unwrap());
         assert!(is_terrain_text(&bni_rs::parse(&text)));
     }
-    let text = to_text(&small(11));
-    for line in [
-        "version=11\ntileset=L\n",
-        "// Ldrt 3, Lgrs 3\nground=Ldrt,Lgrs\n",
-        "// CLdi 1\ncliffs=CLdi\n",
-        "width=3\nheight=2\n",
-        "// -256 to 0 across, -128.5 to -0.5 up.\noffset_x=-256\noffset_y=-128.5\n",
-    ] {
-        assert!(text.contains(line), "{line:?} in\n{text}");
-    }
+    assert_eq!(
+        to_text(&small(11)),
+        "[w3e]\nversion=11\ntileset=L\ncustom_tilesets=0\nground=Ldrt,Lgrs\ncliffs=CLdi\nwidth=3\nheight=2\noffset_x=-256\noffset_y=-128.5\n"
+    );
+}
+
+#[test]
+fn hints_say_what_the_values_mean() {
+    let t = small(11);
+    let usage = Usage::of(&t);
+    let header = |k: &str| match k {
+        "width" => Some("3".to_string()),
+        "height" => Some("2".to_string()),
+        _ => None,
+    };
+    let named = |ground: bool, code: &str| (ground && code == "Ldrt").then(|| "Dirt".to_string());
+    let h = |k: &str, v: &str, u: Option<&Usage>| hint(k, v, &header, u, &named);
+    assert_eq!(h("version", "11", None).as_deref(), Some("up to 1.31"));
+    assert_eq!(h("custom_tilesets", "1", None).as_deref(), Some("custom tilesets"));
+    assert_eq!(h("ground", "Ldrt,Lgrs", Some(&usage)).as_deref(), Some("Dirt 3, Lgrs 3"));
+    assert_eq!(h("ground", "Ldrt,Lgrs", None).as_deref(), Some("Dirt, Lgrs"));
+    assert_eq!(h("cliffs", "CLdi", Some(&usage)).as_deref(), Some("CLdi 1"));
+    assert_eq!(h("cliffs", "", Some(&usage)), None);
+    assert_eq!(h("width", "3", None).as_deref(), Some("2 cells"));
+    assert_eq!(h("offset_x", "-256", None).as_deref(), Some("-256 to 0 across"));
+    assert_eq!(h("offset_y", "-128.5", None).as_deref(), Some("-128.5 to -0.5 up"));
+    assert_eq!(h("tileset", "L", None), None);
 }
 
 #[test]

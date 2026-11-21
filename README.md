@@ -69,25 +69,23 @@ refuses a point the new version can't hold.
 ## Text
 
 For people, the header has a text form (`text`): BNI, one `[w3e]`
-section, the points left out. Comments say what the points make of it:
-the tileset's name, how many points use each texture, where the map
-ends. The wc3-rs editor opens `.w3e` files this way.
+section, the points left out, and no comments: what the values mean is
+`text::hint`'s to say, for an editor to show after them (the wc3-rs
+editor opens `.w3e` files this way, with inlay hints). It says which
+games write the version, whether custom tilesets are on, each texture of
+a list with how many points use it (`text::Usage`, from the file's
+points; the names come from the editor, from the game's files), the map's
+size in cells, and where it spans in world coordinates.
 
 ```ini
 [w3e]
 version=11
 tileset=L
 custom_tilesets=0
-// Ground textures (TerrainArt\Terrain.slk); points using each:
-// Ldrt 3418, Ldro 1203, Lgrs 4788
 ground=Ldrt,Ldro,Lgrs
-// Cliff textures (TerrainArt\CliffTypes.slk); points using each:
-// CLdi 120
 cliffs=CLdi
 width=97
 height=97
-// The bottom left point's world position. The map spans
-// -6144 to 6144 across, -6144 to 6144 up.
 offset_x=-6144
 offset_y=-6144
 ```

@@ -1,12 +1,12 @@
 //! The text form of a terrain file, for people to read and edit: its
 //! header as BNI (INI as the game reads it, `bni-rs`), one `[w3e]`
-//! section, without the points. Comments say what each field is, and what
-//! the points make of it: how many use each texture, where the map ends.
+//! section, without the points. What the values mean (how many points
+//! use each texture, where the map ends) isn't in the text: [`hint`] says
+//! it, for an editor to show after them.
 //!
 //! ```ini
 //! [w3e]
 //! version=11
-//! // Lordaeron Summer
 //! tileset=L
 //! custom_tilesets=0
 //! ground=Ldrt,Ldro,Lgrs
@@ -37,38 +37,100 @@ pub const HEADER: &str = "w3e";
 /// A point's cliff texture that means none.
 pub const NO_CLIFF: usize = 15;
 
-/// The text form of `t`'s header.
+/// The text form of `t`'s header. What the values mean (the tileset's
+/// name, how many points use each texture, where the map ends) isn't in
+/// it: an editor shows it ([`hint`]).
 pub fn to_text(t: &Terrain) -> String {
-    let mut out = String::new();
-    out += "// The map's terrain: all but its points (their heights, textures,\n";
-    out += "// cliffs and water), which saving keeps as they are.\n";
-    out += &format!("[{HEADER}]\n");
-    out += "// 11 up to 1.31; 12 from Reforged, with more ground textures.\n";
+    let mut out = format!("[{HEADER}]\n");
     out += &format!("version={}\n", t.version);
     out += &format!("tileset={}\n", tileset_text(t.tileset));
-    out += "// 1: the map uses custom tilesets.\n";
     out += &format!("custom_tilesets={}\n", t.custom_tilesets);
-
-    let used = t.texture_usage();
-    out += "// Ground textures (TerrainArt\\Terrain.slk); points using each:\n";
-    out += &format!("// {}\n", usage(&t.ground, &used));
     out += &format!("ground={}\n", codes(&t.ground));
-    let used = t.cliff_usage();
-    out += "// Cliff textures (TerrainArt\\CliffTypes.slk); points using each:\n";
-    out += &format!("// {}\n", usage(&t.cliffs, &used));
     out += &format!("cliffs={}\n", codes(&t.cliffs));
-
-    out += "// Points across and up: the map's size in cells, plus one. The\n";
-    out += "// points decide it, so it doesn't change here.\n";
     out += &format!("width={}\nheight={}\n", t.width, t.height);
-    let (right, top) = t.world(t.width.saturating_sub(1), t.height.saturating_sub(1));
-    out += "// The bottom left point's world position. The map spans\n";
-    out += &format!(
-        "// {} to {right} across, {} to {top} up.\n",
-        t.offset_x, t.offset_y
-    );
     out += &format!("offset_x={}\noffset_y={}\n", t.offset_x, t.offset_y);
     out
+}
+
+/// What the points of a file say about its header, for an editor's
+/// hints: how many points use each ground texture and each cliff texture,
+/// by index ([`Terrain::texture_usage`], [`Terrain::cliff_usage`]).
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct Usage {
+    pub ground: Vec<usize>,
+    pub cliffs: Vec<usize>,
+}
+
+impl Usage {
+    pub fn of(t: &Terrain) -> Usage {
+        Usage {
+            ground: t.texture_usage(),
+            cliffs: t.cliff_usage().to_vec(),
+        }
+    }
+}
+
+/// What the header field `key`, whose value is `value`, means, in
+/// English, given the rest of the header `header` (key to value) and,
+/// when the file was read, its points' [`Usage`]; `name` names a ground
+/// (`true`) or cliff texture by code. `None` when there's nothing to say.
+///
+/// - `version`: which games write it;
+/// - `custom_tilesets`: whether the map uses them;
+/// - `ground`, `cliffs`: each texture's name and how many points use it;
+/// - `width`, `height`: the map's size in cells (one less: points are
+///   the cells' corners);
+/// - `offset_x`, `offset_y`: where the map spans, in world coordinates.
+pub fn hint(
+    key: &str,
+    value: &str,
+    header: &dyn Fn(&str) -> Option<String>,
+    usage: Option<&Usage>,
+    name: &dyn Fn(bool, &str) -> Option<String>,
+) -> Option<String> {
+    let number = |v: &str| v.trim().parse::<f64>().ok();
+    match key {
+        "version" => match value.trim() {
+            "11" => Some("up to 1.31".into()),
+            "12" => Some("Reforged: more ground textures".into()),
+            _ => None,
+        },
+        "custom_tilesets" => match value.trim() {
+            "0" => Some("no custom tilesets".into()),
+            "1" => Some("custom tilesets".into()),
+            _ => None,
+        },
+        "ground" | "cliffs" => {
+            let ground = key == "ground";
+            let used = usage.map(|u| if ground { &u.ground } else { &u.cliffs });
+            let parts: Vec<String> = value
+                .split(',')
+                .map(str::trim)
+                .filter(|c| !c.is_empty())
+                .enumerate()
+                .map(|(i, code)| {
+                    let label = name(ground, code).unwrap_or_else(|| code.to_string());
+                    match used {
+                        Some(used) => format!("{label} {}", used.get(i).copied().unwrap_or(0)),
+                        None => label,
+                    }
+                })
+                .collect();
+            (!parts.is_empty()).then(|| parts.join(", "))
+        }
+        "width" | "height" => {
+            let n = number(value)?;
+            (n >= 1.0).then(|| format!("{} cells", n - 1.0))
+        }
+        "offset_x" | "offset_y" => {
+            let (size, word) = if key == "offset_x" { ("width", "across") } else { ("height", "up") };
+            let from = number(value)? as f32;
+            let points = header(size).and_then(|v| number(&v)).unwrap_or(1.0) as f32;
+            let to = from + (points - 1.0).max(0.0) * crate::CELL;
+            Some(format!("{from} to {to} {word}"))
+        }
+        _ => None,
+    }
 }
 
 /// A letter, or a number for any other byte.
@@ -95,16 +157,6 @@ fn codes(list: &[Rawcode]) -> String {
     list.iter().map(|&c| code_text(c)).collect::<Vec<_>>().join(",")
 }
 
-fn usage(list: &[Rawcode], used: &[usize]) -> String {
-    if list.is_empty() {
-        return "none".into();
-    }
-    list.iter()
-        .enumerate()
-        .map(|(i, &c)| format!("{} {}", code_text(c), used.get(i).copied().unwrap_or(0)))
-        .collect::<Vec<_>>()
-        .join(", ")
-}
 
 /// Is `doc` a terrain file's text form: is its first section `[w3e]`?
 pub fn is_terrain_text(doc: &Document) -> bool {
